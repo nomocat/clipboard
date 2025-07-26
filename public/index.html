@@ -4,41 +4,123 @@
   <meta charset="UTF-8" />
   <title>共享粘贴板</title>
   <style>
-    body { font-family: sans-serif; padding: 2em; max-width: 600px; margin: auto; }
-    textarea { width: 100%; height: 300px; font-size: 1rem; }
-    button { margin-top: 1em; padding: 0.5em 1em; font-size: 1rem; }
+    body {
+      font-family: sans-serif;
+      display: flex;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .sidebar {
+      width: 150px;
+      background-color: #f4f4f4;
+      border-right: 1px solid #ccc;
+      padding: 1em;
+      box-sizing: border-box;
+    }
+
+    .sidebar button {
+      display: block;
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 8px;
+      font-size: 1rem;
+      background: #fff;
+      border: 1px solid #ccc;
+      cursor: pointer;
+    }
+
+    .sidebar button.active {
+      background-color: #007bff;
+      color: white;
+    }
+
+    .main {
+      flex: 1;
+      padding: 2em;
+      box-sizing: border-box;
+    }
+
+    textarea {
+      width: 100%;
+      height: 400px;
+      font-size: 1rem;
+    }
+
+    button.save {
+      margin-top: 1em;
+      padding: 0.5em 1em;
+      font-size: 1rem;
+    }
   </style>
 </head>
 <body>
-  <h2>📋 粘贴板</h2>
-  <textarea id="clipboard"></textarea>
-  <br />
-  <button onclick="updateClipboard()">保存</button>
+  <div class="sidebar" id="sidebar">
+    <!-- 动态插入 index 按钮 -->
+  </div>
+
+  <div class="main">
+    <h2>📋 粘贴板 Index: <span id="current-index">0</span></h2>
+    <textarea id="clipboard"></textarea><br>
+    <button class="save" onclick="updateClipboard()">保存</button>
+  </div>
 
   <script>
+    const MAX_INDEX = 10;
+    let currentIndex = 0;
+    const sidebar = document.getElementById("sidebar");
+    const indexLabel = document.getElementById("current-index");
     const textarea = document.getElementById("clipboard");
 
+    // 创建 sidebar 按钮
+    for (let i = 0; i < MAX_INDEX; i++) {
+      const btn = document.createElement("button");
+      btn.textContent = `Index ${i}`;
+      btn.onclick = () => selectIndex(i);
+      btn.id = `btn-${i}`;
+      if (i === 0) btn.classList.add("active");
+      sidebar.appendChild(btn);
+    }
+
+    function selectIndex(index) {
+      currentIndex = index;
+      indexLabel.textContent = index;
+      updateSidebarHighlight(index);
+      loadClipboard();
+    }
+
+    function updateSidebarHighlight(index) {
+      for (let i = 0; i < MAX_INDEX; i++) {
+        const btn = document.getElementById(`btn-${i}`);
+        btn.classList.toggle("active", i === index);
+      }
+    }
+
     async function loadClipboard() {
-      const res = await fetch("/api/content");
-      const data = await res.json();
-      textarea.value = data.content;
+      try {
+        const res = await fetch(`/api/content?index=${currentIndex}`);
+        if (res.ok) {
+          const data = await res.json();
+          textarea.value = data.content || "";
+        } else {
+          textarea.value = "";
+        }
+      } catch (e) {
+        textarea.value = "";
+        console.error("加载失败", e);
+      }
     }
 
     async function updateClipboard() {
-      await fetch("/api/content", {
+      await fetch(`/api/content?index=${currentIndex}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content: textarea.value })
       });
-      alert("已保存！");
     }
 
-    // 初始加载内容
+    // 初始加载第 0 个内容
     loadClipboard();
-
-    // 每隔 5 秒刷新（可选）
-    setInterval(loadClipboard, 5000);
   </script>
 </body>
 </html>
-
