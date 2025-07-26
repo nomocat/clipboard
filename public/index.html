@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>共享粘贴板</title>
+  <style>
+    body { font-family: sans-serif; padding: 2em; max-width: 600px; margin: auto; }
+    textarea { width: 100%; height: 300px; font-size: 1rem; }
+    button { margin-top: 1em; padding: 0.5em 1em; font-size: 1rem; }
+  </style>
+</head>
+<body>
+  <h2>📋 粘贴板</h2>
+  <textarea id="clipboard"></textarea>
+  <br />
+  <button onclick="updateClipboard()">保存</button>
+
+  <script>
+    const textarea = document.getElementById("clipboard");
+
+    async function loadClipboard() {
+      const res = await fetch("/api/content");
+      const data = await res.json();
+      textarea.value = data.content;
+    }
+
+    async function updateClipboard() {
+      await fetch("/api/content", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: textarea.value })
+      });
+      alert("已保存！");
+    }
+
+    // 初始加载内容
+    loadClipboard();
+
+    // 每隔 5 秒刷新（可选）
+    setInterval(loadClipboard, 5000);
+  </script>
+</body>
+</html>
+
