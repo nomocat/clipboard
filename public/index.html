@@ -54,10 +54,9 @@
     }
   </style>
 </head>
+
 <body>
-  <div class="sidebar" id="sidebar">
-    <!-- 动态插入 index 按钮 -->
-  </div>
+  <div class="sidebar" id="sidebar"></div>
 
   <div class="main">
     <h2>📋 粘贴板 Index: <span id="current-index">0</span></h2>
@@ -68,11 +67,44 @@
   <script>
     const MAX_INDEX = 10;
     let currentIndex = 0;
+    let clipboardList = {};
     const sidebar = document.getElementById("sidebar");
     const indexLabel = document.getElementById("current-index");
     const textarea = document.getElementById("clipboard");
 
-    // 创建 sidebar 按钮
+    // 创建 WebSocket 连接
+    const ws = new WebSocket(`ws://${location.host}`);
+
+    ws.onopen = () => {
+      console.log("✅ WebSocket 已连接");
+      loadClipboard();
+    };
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      const { type, index, content } = data;
+
+      if (type === "read" && index === currentIndex) {
+        textarea.value = content || "";
+      }
+
+      if (type === "update") {
+        clipboardList[index] = content;
+        if (index === currentIndex) {
+          textarea.value = content;
+        }
+      }
+    };
+
+    function sendMessage(data) {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify(data));
+      } else {
+        console.warn("⚠️ WebSocket 未连接，消息未发送", data);
+      }
+    }
+
+    // 创建侧边栏按钮
     for (let i = 0; i < MAX_INDEX; i++) {
       const btn = document.createElement("button");
       btn.textContent = `Index ${i}`;
@@ -96,31 +128,14 @@
       }
     }
 
-    async function loadClipboard() {
-      try {
-        const res = await fetch(`/api/content?index=${currentIndex}`);
-        if (res.ok) {
-          const data = await res.json();
-          textarea.value = data.content || "";
-        } else {
-          textarea.value = "";
-        }
-      } catch (e) {
-        textarea.value = "";
-        console.error("加载失败", e);
-      }
+    function loadClipboard() {
+      sendMessage({ type: "read", index: currentIndex });
     }
 
-    async function updateClipboard() {
-      await fetch(`/api/content?index=${currentIndex}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: textarea.value })
-      });
+    function updateClipboard() {
+      const content = textarea.value;
+      sendMessage({ type: "write", index: currentIndex, content });
     }
-
-    // 初始加载第 0 个内容
-    loadClipboard();
   </script>
 </body>
 </html>
