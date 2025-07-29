@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <title>共享粘贴板</title>
@@ -47,7 +48,7 @@
       font-size: 1rem;
     }
 
-    button.save {
+    button.save, button.copy {
       margin-top: 1em;
       padding: 0.5em 1em;
       font-size: 1rem;
@@ -61,7 +62,8 @@
   <div class="main">
     <h2>📋 粘贴板 Index: <span id="current-index">0</span></h2>
     <textarea id="clipboard"></textarea><br>
-    <button class="save" onclick="updateClipboard()">保存</button>
+    <button class="save" onclick="updateClipboord()">保存</button>
+    <button class="copy" onclick="copyClipboard()">复制</button>
   </div>
 
   <script>
@@ -105,14 +107,25 @@
     }
 
     // 创建侧边栏按钮
+    // 创建侧边栏按钮
+    const EXECUTE_ME = 8;
     for (let i = 0; i < MAX_INDEX; i++) {
       const btn = document.createElement("button");
       btn.textContent = `Index ${i}`;
-      btn.onclick = () => selectIndex(i);
       btn.id = `btn-${i}`;
+
+      if (i === EXECUTE_ME) {
+        btn.onclick = () => {
+          window.location.href = "/world.execute.me";
+        };
+      } else {
+        btn.onclick = () => selectIndex(i);
+      }
+
       if (i === 0) btn.classList.add("active");
       sidebar.appendChild(btn);
     }
+
 
     function selectIndex(index) {
       currentIndex = index;
@@ -136,6 +149,32 @@
       const content = textarea.value;
       sendMessage({ type: "write", index: currentIndex, content });
     }
+
+    function copyClipboard() {
+      navigator.clipboard.writeText(textarea.value).then(() => {
+        console.log("✅ 已复制到剪贴板");
+        // 可选：短暂提示用户
+        const original = document.title;
+        document.title = "✅ 已复制";
+        setTimeout(() => {
+          document.title = original;
+        }, 1000);
+      }).catch(err => {
+        console.error("❌ 复制失败", err);
+        alert("复制失败，请手动复制");
+      });
+    }
+
+
+    // 监听 F12 跳转
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "F12" || key === "CapsLock") {
+        e.preventDefault(); // 可选：阻止打开开发者工具
+        window.location.href = "/world.execute.me";
+      }
+    });
+
   </script>
 </body>
+
 </html>

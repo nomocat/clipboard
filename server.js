@@ -46,6 +46,20 @@ wss.on("connection", (ws) => {
   });
 });
 
+app.get("/world.execute.me", (req, res) => {
+  const fullPath = path.join(__dirname, "public", "world.execute.me.html");
+
+  fs.readFile(fullPath, "utf8", (err, data) => {
+    if (err) {
+      res.status(404).send("File not found");
+    } else {
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.send(data);
+    }
+  });
+});
+
+
 server.listen(config.port, config.host, () => {
   console.log(`📋 Clipboard WebSocket server running at http://${config.host}:${config.port}`);
 });
